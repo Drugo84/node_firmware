@@ -43,13 +43,13 @@ ProcessMessage NodeCommandModule::handleReceived(const meshtastic_MeshPacket &mp
     } else if (strncasecmp(incoming, cmdPos, strlen(cmdPos)) == 0) {
         if (positionModule)
             positionModule->sendOurPosition();
-        sendTextReply(mp, "Aggiornamento posizione inviato");
+        sendTextReply(mp, "Sent");
         return ProcessMessage::STOP;
 
     } else if (strncasecmp(incoming, cmdMetrics, strlen(cmdMetrics)) == 0) {
         if (deviceTelemetryModule)
             deviceTelemetryModule->sendTelemetryPublic();
-        sendTextReply(mp, "Aggiornamento metriche inviato");
+        sendTextReply(mp, "Sent");
         return ProcessMessage::STOP;
     }
 
