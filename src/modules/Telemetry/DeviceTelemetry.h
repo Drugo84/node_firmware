@@ -65,3 +65,4 @@ class DeviceTelemetryModule : private concurrency::OSThread,
     uint32_t uptimeWrapCount;
     uint32_t uptimeLastMs;
 };
+extern DeviceTelemetryModule *deviceTelemetryModule;

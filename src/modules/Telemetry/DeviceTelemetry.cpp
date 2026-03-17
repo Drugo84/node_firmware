@@ -195,3 +195,4 @@ bool DeviceTelemetryModule::sendTelemetry(NodeNum dest, bool phoneOnly)
     }
     return true;
 }
+DeviceTelemetryModule *deviceTelemetryModule;
