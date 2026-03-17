@@ -24,6 +24,7 @@ class DeviceTelemetryModule : private concurrency::OSThread,
         setIntervalFromNow(setStartDelay()); // Wait until NodeInfo is sent
     }
     virtual bool wantUIFrame() { return false; }
+    void sendTelemetryPublic() { sendTelemetry(NODENUM_BROADCAST); }
 
   protected:
     /** Called to handle a particular incoming message

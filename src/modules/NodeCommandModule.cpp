@@ -5,6 +5,7 @@
 #include "Router.h"
 #include "configuration.h"
 #include "main.h"
+#include "modules/Telemetry/DeviceTelemetry.h"
 
 NodeCommandModule *nodeCommandModule;
 
@@ -30,8 +31,8 @@ ProcessMessage NodeCommandModule::handleReceived(const meshtastic_MeshPacket &mp
 
     char cmdPing[64], cmdPos[64], cmdMetrics[64];
     snprintf(cmdPing,    sizeof(cmdPing),    "%s ping",      myName);
-    snprintf(cmdPos,     sizeof(cmdPos),     "%s posizione", myName);
-    snprintf(cmdMetrics, sizeof(cmdMetrics), "%s metriche",  myName);
+    snprintf(cmdPos,     sizeof(cmdPos),     "%s position", myName);
+    snprintf(cmdMetrics, sizeof(cmdMetrics), "%s telemetry",  myName);
 
     LOG_INFO("NodeCommandModule: ricevuto '%s' da 0x%x\n", incoming, mp.from);
 
@@ -46,6 +47,8 @@ ProcessMessage NodeCommandModule::handleReceived(const meshtastic_MeshPacket &mp
         return ProcessMessage::STOP;
 
     } else if (strncasecmp(incoming, cmdMetrics, strlen(cmdMetrics)) == 0) {
+        if (deviceTelemetryModule)
+            deviceTelemetryModule->sendTelemetryPublic();
         sendTextReply(mp, "Aggiornamento metriche inviato");
         return ProcessMessage::STOP;
     }
