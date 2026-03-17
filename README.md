@@ -1,39 +1,55 @@
-<div align="center" markdown="1">
+# Meshtastic Firmware — NodeCommandModule
 
-<img src=".github/meshtastic_logo.png" alt="Meshtastic Logo" width="80"/>
-<h1>Meshtastic Firmware</h1>
+Fork di [meshtastic/firmware](https://github.com/meshtastic/firmware) con aggiunta del modulo **NodeCommandModule** che permette di interrogare un nodo via messaggio diretto sulla mesh.
 
-![GitHub release downloads](https://img.shields.io/github/downloads/meshtastic/firmware/total)
-[![CI](https://img.shields.io/github/actions/workflow/status/meshtastic/firmware/main_matrix.yml?branch=master&label=actions&logo=github&color=yellow)](https://github.com/meshtastic/firmware/actions/workflows/ci.yml)
-[![CLA assistant](https://cla-assistant.io/readme/badge/meshtastic/firmware)](https://cla-assistant.io/meshtastic/firmware)
-[![Fiscal Contributors](https://opencollective.com/meshtastic/tiers/badge.svg?label=Fiscal%20Contributors&color=deeppink)](https://opencollective.com/meshtastic/)
-[![Vercel](https://img.shields.io/static/v1?label=Powered%20by&message=Vercel&style=flat&logo=vercel&color=000000)](https://vercel.com?utm_source=meshtastic&utm_campaign=oss)
+## Comandi supportati
 
-<a href="https://trendshift.io/repositories/5524" target="_blank"><img src="https://trendshift.io/api/badge/repositories/5524" alt="meshtastic%2Ffirmware | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+Invia un messaggio diretto al nodo con il formato `NomeNodo comando`:
 
-</div>
+| Comando | Risposta |
+|---|---|
+| `NomeNodo ping` | `pong` |
+| `NomeNodo position` | Invia pacchetto posizione reale sulla mesh + `Sent` |
+| `NomeNodo telemetry` | Invia pacchetto telemetria reale sulla mesh + `Sent` |
 
-</div>
+I comandi sono **case insensitive**. La posizione e la telemetria vengono trasmesse come pacchetti nativi Meshtastic — tutti i nodi nella mesh li ricevono e aggiornano il loro nodeDB esattamente come per i broadcast automatici.
 
-<div align="center">
-	<a href="https://meshtastic.org">Website</a>
-	-
-	<a href="https://meshtastic.org/docs/">Documentation</a>
-</div>
+## Dispositivi supportati e file firmware
 
-## Overview
+| Dispositivo | File | Note |
+|---|---|---|
+| Seeed XIAO nRF52840 Kit (I2C su D6/D7) | `firmware-seeed_xiao_nrf52840_kit_i2c-*.uf2` | Drag&drop in modalità bootloader |
+| Heltec WiFi LoRa 32 V3 | `firmware-heltec-v3-*.bin` | Aggiornamento via [Web Flasher](https://flasher.meshtastic.org) |
+| Heltec WiFi LoRa 32 V3 (primo flash) | `firmware-heltec-v3-*.factory.bin` | Primo flash su dispositivo vergine |
+| Heltec Wireless Stick Lite V3 | `firmware-heltec-wsl-v3-*.bin` | Aggiornamento via [Web Flasher](https://flasher.meshtastic.org) |
+| Heltec Wireless Stick Lite V3 (primo flash) | `firmware-heltec-wsl-v3-*.factory.bin` | Primo flash su dispositivo vergine |
 
-This repository contains the official device firmware for Meshtastic, an open-source LoRa mesh networking project designed for long-range, low-power communication without relying on internet or cellular infrastructure. The firmware supports various hardware platforms, including ESP32, nRF52, RP2040/RP2350, and Linux-based devices.
+## Come flashare
 
-Meshtastic enables text messaging, location sharing, and telemetry over a decentralized mesh network, making it ideal for outdoor adventures, emergency preparedness, and remote operations.
+**XIAO nRF52840:** doppio click sul tasto reset, compare un disco USB, trascina il `.uf2`.
 
-### Get Started
+**Heltec V3 / Wireless Stick Lite V3:** vai su [flasher.meshtastic.org](https://flasher.meshtastic.org), seleziona il dispositivo, carica il `.bin` tramite "Custom firmware".
 
-- 🔧 **[Building Instructions](https://meshtastic.org/docs/development/firmware/build)** – Learn how to compile the firmware from source.
-- ⚡ **[Flashing Instructions](https://meshtastic.org/docs/getting-started/flashing-firmware/)** – Install or update the firmware on your device.
+## Modifiche al firmware originale
 
-Join our community and help improve Meshtastic! 🚀
+- `src/modules/NodeCommandModule.h` — header del modulo
+- `src/modules/NodeCommandModule.cpp` — implementazione comandi
+- `src/modules/Modules.cpp` — registrazione modulo
+- `src/modules/Telemetry/DeviceTelemetry.h` — aggiunto wrapper pubblico `sendTelemetryPublic()`
+- `src/modules/Telemetry/DeviceTelemetry.cpp` — aggiunto puntatore globale `deviceTelemetryModule`
 
-## Stats
+## Build
+```bash
+# XIAO nRF52840 con I2C su D6/D7
+pio run -e seeed_xiao_nrf52840_kit_i2c
 
-![Alt](https://repobeats.axiom.co/api/embed/8025e56c482ec63541593cc5bd322c19d5c0bdcf.svg "Repobeats analytics image")
+# Heltec WiFi LoRa 32 V3
+pio run -e heltec-v3
+
+# Heltec Wireless Stick Lite V3
+pio run -e heltec-wsl-v3
+```
+
+## Crediti
+
+Basato su [meshtastic/firmware](https://github.com/meshtastic/firmware) — seguire il repo upstream per aggiornamenti.
