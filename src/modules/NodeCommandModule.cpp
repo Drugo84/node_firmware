@@ -29,10 +29,11 @@ ProcessMessage NodeCommandModule::handleReceived(const meshtastic_MeshPacket &mp
     if (!myName || myName[0] == '\0')
         myName = "node";
 
-    char cmdPing[64], cmdPos[64], cmdMetrics[64];
+    char cmdPing[64], cmdPos[64], cmdMetrics[64], cmdWhere[64];
     snprintf(cmdPing,    sizeof(cmdPing),    "%s ping",      myName);
-    snprintf(cmdPos,     sizeof(cmdPos),     "%s position", myName);
-    snprintf(cmdMetrics, sizeof(cmdMetrics), "%s telemetry",  myName);
+    snprintf(cmdPos,     sizeof(cmdPos),     "%s position",  myName);
+    snprintf(cmdMetrics, sizeof(cmdMetrics), "%s telemetry", myName);
+    snprintf(cmdWhere,   sizeof(cmdWhere),   "%s where",     myName);
 
     LOG_INFO("NodeCommandModule: ricevuto '%s' da 0x%x\n", incoming, mp.from);
 
@@ -50,6 +51,19 @@ ProcessMessage NodeCommandModule::handleReceived(const meshtastic_MeshPacket &mp
         if (deviceTelemetryModule)
             deviceTelemetryModule->sendTelemetryPublic();
         sendTextReply(mp, "Sent");
+        return ProcessMessage::STOP;
+
+    } else if (strncasecmp(incoming, cmdWhere, strlen(cmdWhere)) == 0) {
+        meshtastic_NodeInfoLite *me = nodeDB->getMeshNode(nodeDB->getNodeNum());
+        if (me && me->has_position && me->position.latitude_i != 0) {
+            char link[120];
+            snprintf(link, sizeof(link), "https://maps.google.com/?q=%.5f,%.5f",
+                me->position.latitude_i * 1e-7,
+                me->position.longitude_i * 1e-7);
+            sendTextReply(mp, link);
+        } else {
+            sendTextReply(mp, "No GPS fix");
+        }
         return ProcessMessage::STOP;
     }
 
