@@ -67,7 +67,7 @@ void NodeCommandModule::sendTextReply(const meshtastic_MeshPacket &original, con
 
     memcpy(reply->decoded.payload.bytes, text, textLen);
     reply->decoded.payload.size = textLen;
-    reply->to      = original.from;
+    reply->to = (original.to == NODENUM_BROADCAST) ? NODENUM_BROADCAST : original.from;
     reply->channel = original.channel;
 
     service->sendToMesh(reply, RX_SRC_LOCAL);
