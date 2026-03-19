@@ -6,6 +6,7 @@
 #include "configuration.h"
 #include "main.h"
 #include "modules/Telemetry/DeviceTelemetry.h"
+#include "modules/Telemetry/EnvironmentTelemetry.h"
 
 NodeCommandModule *nodeCommandModule;
 
@@ -50,6 +51,8 @@ ProcessMessage NodeCommandModule::handleReceived(const meshtastic_MeshPacket &mp
     } else if (strncasecmp(incoming, cmdMetrics, strlen(cmdMetrics)) == 0) {
         if (deviceTelemetryModule)
             deviceTelemetryModule->sendTelemetryPublic();
+        if (environmentTelemetryModule)
+            environmentTelemetryModule->sendEnvTelemetryPublic();
         sendTextReply(mp, "Sent");
         return ProcessMessage::STOP;
 
