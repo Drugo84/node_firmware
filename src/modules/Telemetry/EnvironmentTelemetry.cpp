@@ -713,5 +713,3 @@ AdminMessageHandleResult EnvironmentTelemetryModule::handleAdminMessageForModule
 }
 
 #endif
-
-EnvironmentTelemetryModule *environmentTelemetryModule;

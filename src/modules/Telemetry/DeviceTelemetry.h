@@ -24,7 +24,6 @@ class DeviceTelemetryModule : private concurrency::OSThread,
         setIntervalFromNow(setStartDelay()); // Wait until NodeInfo is sent
     }
     virtual bool wantUIFrame() { return false; }
-    void sendTelemetryPublic() { sendTelemetry(NODENUM_BROADCAST); }
 
   protected:
     /** Called to handle a particular incoming message
@@ -66,4 +65,3 @@ class DeviceTelemetryModule : private concurrency::OSThread,
     uint32_t uptimeWrapCount;
     uint32_t uptimeLastMs;
 };
-extern DeviceTelemetryModule *deviceTelemetryModule;

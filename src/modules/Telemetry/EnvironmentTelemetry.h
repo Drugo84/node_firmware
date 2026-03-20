@@ -42,7 +42,6 @@ class EnvironmentTelemetryModule : private concurrency::OSThread,
     virtual void drawFrame(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y) override;
 #endif
 
-    void sendEnvTelemetryPublic() { sendTelemetry(NODENUM_BROADCAST); }
   protected:
     /** Called to handle a particular incoming message
     @return true if you've guaranteed you've handled this message and no other handlers should be considered for it
@@ -73,4 +72,3 @@ class EnvironmentTelemetryModule : private concurrency::OSThread,
 };
 
 #endif
-extern EnvironmentTelemetryModule *environmentTelemetryModule;
