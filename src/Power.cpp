@@ -53,6 +53,12 @@
 #define DELAY_FOREVER portMAX_DELAY
 #endif
 
+namespace
+{
+constexpr uint32_t AUTO_REBOOT_INTERVAL_MS = 4UL * 24UL * 60UL * 60UL * 1000UL;
+uint32_t autoRebootStartMsec = 0;
+} // namespace
+
 #if defined(BATTERY_PIN) && defined(ARCH_ESP32)
 
 #ifndef BAT_MEASURE_ADC_UNIT // ADC1 is default
@@ -753,6 +759,15 @@ void Power::powerCommandsCheck()
     if (shutdownAtMsec && millis() > shutdownAtMsec) {
         shutdownAtMsec = 0;
         shutdown();
+    }
+
+    if (autoRebootStartMsec == 0) {
+        autoRebootStartMsec = millis();
+    }
+
+    if (rebootAtMsec == 0 && shutdownAtMsec == 0 && !Throttle::isWithinTimespanMs(autoRebootStartMsec, AUTO_REBOOT_INTERVAL_MS)) {
+        LOG_INFO("Automatic maintenance reboot after %u seconds uptime", AUTO_REBOOT_INTERVAL_MS / 1000U);
+        reboot();
     }
 }
 
