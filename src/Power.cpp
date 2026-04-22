@@ -55,7 +55,8 @@
 
 namespace
 {
-constexpr uint32_t AUTO_REBOOT_INTERVAL_MS = 4UL * 24UL * 60UL * 60UL * 1000UL;
+constexpr uint32_t AUTO_REBOOT_INTERVAL_MS = 5UL * 24UL * 60UL * 60UL * 1000UL; // Reboot ogni 5 giorni
+    bool autoRebootInitialized = false;
 uint32_t autoRebootStartMsec = 0;
 } // namespace
 
@@ -753,6 +754,8 @@ void Power::powerCommandsCheck()
 {
     if (rebootAtMsec && millis() > rebootAtMsec) {
         LOG_INFO("Rebooting");
+        LOG_INFO("🔄 Automatic maintenance reboot after 5 days uptime");
+
         reboot();
     }
 
@@ -761,12 +764,15 @@ void Power::powerCommandsCheck()
         shutdown();
     }
 
-    if (autoRebootStartMsec == 0) {
+    if (!autoRebootInitialized && millis() > 5000) {
         autoRebootStartMsec = millis();
+        autoRebootInitialized = true;
     }
 
     if (rebootAtMsec == 0 && shutdownAtMsec == 0 && !Throttle::isWithinTimespanMs(autoRebootStartMsec, AUTO_REBOOT_INTERVAL_MS)) {
         LOG_INFO("Automatic maintenance reboot after %u seconds uptime", AUTO_REBOOT_INTERVAL_MS / 1000U);
+        LOG_INFO("🔄 Automatic maintenance reboot after 5 days uptime");
+
         reboot();
     }
 }
