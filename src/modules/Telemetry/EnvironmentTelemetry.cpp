@@ -757,8 +757,10 @@ bool EnvironmentTelemetryModule::sendTelemetry(NodeNum dest, bool phoneOnly)
 
         lastMeasurementPacket = packetPool.allocCopy(*p);
         if (phoneOnly) {
-            LOG_INFO("Send packet to phone");
+            LOG_INFO("Send packet to phone and mesh");
             service->sendToPhone(p);
+            // Also broadcast to mesh so other nodes can receive the telemetry
+            service->sendToMesh(p, RX_SRC_LOCAL, true);
         } else {
             LOG_INFO("Send packet to mesh");
             service->sendToMesh(p, RX_SRC_LOCAL, true);
