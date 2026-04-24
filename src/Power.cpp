@@ -55,7 +55,7 @@
 
 namespace
 {
-constexpr uint32_t AUTO_REBOOT_INTERVAL_MS = 4UL * 24UL * 60UL * 60UL * 1000UL;
+constexpr uint32_t AUTO_REBOOT_INTERVAL_MS = 2UL * 24UL * 60UL * 60UL * 1000UL; // reboot 2days DRG
 uint32_t autoRebootStartMsec = 0;
 } // namespace
 

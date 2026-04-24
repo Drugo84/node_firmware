@@ -57,6 +57,8 @@ class ScanI2CTwoWire : public ScanI2C
 
     bool i2cCommandResponseLength(DeviceAddress addr, uint16_t command, uint8_t expectedLength) const;
 
+    bool isSHT4xSerialResponseValid(DeviceAddress addr) const;
+
     DeviceType probeOLED(ScanI2C::DeviceAddress) const;
 
     static void logFoundDevice(const char *device, uint8_t address);

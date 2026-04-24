@@ -34,6 +34,12 @@ namespace graphics
 extern void drawCommonHeader(OLEDDisplay *display, int16_t x, int16_t y, const char *titleStr, bool force_no_invert,
                              bool show_date);
 }
+
+#if __has_include(<SHTSensor.h>)
+#include "Sensor/SHTXXSensor.h"
+#endif
+
+
 #if __has_include(<Adafruit_AHTX0.h>)
 #include "Sensor/AHT10.h"
 #endif
@@ -68,14 +74,16 @@ extern void drawCommonHeader(OLEDDisplay *display, int16_t x, int16_t y, const c
 
 #if __has_include(<Adafruit_SHT31.h>)
 #include "Sensor/SHT31Sensor.h"
+#include "Sensor/SHTXXSensor.h"
 #endif
-
+ 
 #if __has_include(<Adafruit_LPS2X.h>)
 #include "Sensor/LPS22HBSensor.h"
 #endif
 
 #if __has_include(<Adafruit_SHTC3.h>)
 #include "Sensor/SHTC3Sensor.h"
+#include "Sensor/SHTXXSensor.h"
 #endif
 
 #if __has_include("RAK12035_SoilMoisture.h") && defined(RAK_4631) && RAK_4631 == 1
@@ -96,6 +104,7 @@ extern void drawCommonHeader(OLEDDisplay *display, int16_t x, int16_t y, const c
 
 #if __has_include(<Adafruit_SHT4x.h>)
 #include "Sensor/SHT4XSensor.h"
+#include "Sensor/SHTXXSensor.h"
 #endif
 
 #if __has_include(<SparkFun_MLX90632_Arduino_Library.h>)
@@ -172,6 +181,14 @@ void EnvironmentTelemetryModule::i2cScanFinished(ScanI2C *i2cScanner)
 #endif
 
 #if !MESHTASTIC_EXCLUDE_ENVIRONMENTAL_SENSOR && !MESHTASTIC_EXCLUDE_ENVIRONMENTAL_SENSOR_EXTERNAL
+LOG_INFO("--------------------------------inizio a cercare i sensori..");
+#if __has_include(<SHTSensor.h>)
+    // TODO Can we scan for multiple sensors connected on the same bus?
+    addSensor<SHTXXSensor>(i2cScanner, ScanI2C::DeviceType::SHTXX);
+	LOG_INFO("----------------------------------------- addsensor SHTXX passato..");
+#else
+LOG_INFO("----------------------------------------- addsensor SHTXX saltato..");
+#endif
 #if __has_include(<DFRobot_LarkWeatherStation.h>)
     addSensor<DFRobotLarkSensor>(i2cScanner, ScanI2C::DeviceType::DFROBOT_LARK);
 #endif
@@ -245,7 +262,6 @@ void EnvironmentTelemetryModule::i2cScanFinished(ScanI2C *i2cScanner)
 #if __has_include(<BH1750_WE.h>)
     addSensor<BH1750Sensor>(i2cScanner, ScanI2C::DeviceType::BH1750);
 #endif
-
 #endif
 }
 
@@ -534,8 +550,89 @@ bool EnvironmentTelemetryModule::handleReceivedProtobuf(const meshtastic_MeshPac
     return false; // Let others look at this message also if they want
 }
 
+static bool isPreferredTemperatureProvider(const TelemetrySensor *sensor)
+{
+    switch (sensor->getSensorType()) {
+    case meshtastic_TelemetrySensorType_SHT31:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static void mergeEnvironmentMetrics(const meshtastic_EnvironmentMetrics *src,
+                                    meshtastic_EnvironmentMetrics *dst,
+                                    bool preferredTemperatureSource)
+{
+    if (src->has_temperature && (!dst->has_temperature || preferredTemperatureSource)) {
+        dst->has_temperature = true;
+        dst->temperature = src->temperature;
+    }
+    if (src->has_relative_humidity && (!dst->has_relative_humidity || preferredTemperatureSource)) {
+        dst->has_relative_humidity = true;
+        dst->relative_humidity = src->relative_humidity;
+    }
+    if (src->has_barometric_pressure && !dst->has_barometric_pressure) {
+        dst->has_barometric_pressure = true;
+        dst->barometric_pressure = src->barometric_pressure;
+    }
+    if (src->has_current && !dst->has_current) {
+        dst->has_current = true;
+        dst->current = src->current;
+    }
+    if (src->has_gas_resistance && !dst->has_gas_resistance) {
+        dst->has_gas_resistance = true;
+        dst->gas_resistance = src->gas_resistance;
+    }
+    if (src->has_voltage && !dst->has_voltage) {
+        dst->has_voltage = true;
+        dst->voltage = src->voltage;
+    }
+    if (src->has_iaq && !dst->has_iaq) {
+        dst->has_iaq = true;
+        dst->iaq = src->iaq;
+    }
+    if (src->has_distance && !dst->has_distance) {
+        dst->has_distance = true;
+        dst->distance = src->distance;
+    }
+    if (src->has_lux && !dst->has_lux) {
+        dst->has_lux = true;
+        dst->lux = src->lux;
+    }
+    if (src->has_white_lux && !dst->has_white_lux) {
+        dst->has_white_lux = true;
+        dst->white_lux = src->white_lux;
+    }
+    if (src->has_wind_speed && !dst->has_wind_speed) {
+        dst->has_wind_speed = true;
+        dst->wind_speed = src->wind_speed;
+    }
+    if (src->has_wind_direction && !dst->has_wind_direction) {
+        dst->has_wind_direction = true;
+        dst->wind_direction = src->wind_direction;
+    }
+    if (src->has_weight && !dst->has_weight) {
+        dst->has_weight = true;
+        dst->weight = src->weight;
+    }
+    if (src->has_radiation && !dst->has_radiation) {
+        dst->has_radiation = true;
+        dst->radiation = src->radiation;
+    }
+    if (src->has_soil_temperature && !dst->has_soil_temperature) {
+        dst->has_soil_temperature = true;
+        dst->soil_temperature = src->soil_temperature;
+    }
+    if (src->has_soil_moisture && !dst->has_soil_moisture) {
+        dst->has_soil_moisture = true;
+        dst->soil_moisture = src->soil_moisture;
+    }
+}
+
 bool EnvironmentTelemetryModule::getEnvironmentTelemetry(meshtastic_Telemetry *m)
 {
+    LOG_DEBUG("TELEMETRY: Avvio getEnvironmentTelemetry");
     bool valid = false;
     bool hasSensor = false;
     // getMetrics() doesn't always get evaluated because of
@@ -546,7 +643,17 @@ bool EnvironmentTelemetryModule::getEnvironmentTelemetry(meshtastic_Telemetry *m
     m->variant.environment_metrics = meshtastic_EnvironmentMetrics_init_zero;
 
     for (TelemetrySensor *sensor : sensors) {
-        get_metrics = sensor->getMetrics(m); // avoid short-circuit evaluation rules
+        uint8_t currentAddr = sensor->getAddr(); // DRG
+        meshtastic_Telemetry temp = meshtastic_Telemetry_init_zero;
+        temp.which_variant = meshtastic_Telemetry_environment_metrics_tag;
+        get_metrics = sensor->getMetrics(&temp); // avoid short-circuit evaluation rules
+        if (get_metrics) {
+            mergeEnvironmentMetrics(&temp.variant.environment_metrics, &m->variant.environment_metrics,
+                                    isPreferredTemperatureProvider(sensor));
+            LOG_INFO("TELEMETRY: Dati letti correttamente da 0x%02x (T: %.1f H: %.1f)",
+                      currentAddr, temp.variant.environment_metrics.temperature,
+                      temp.variant.environment_metrics.relative_humidity);
+        }
         valid = valid || get_metrics;
         hasSensor = true;
     }

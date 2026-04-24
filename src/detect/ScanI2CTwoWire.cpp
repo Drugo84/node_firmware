@@ -117,6 +117,50 @@ uint16_t ScanI2CTwoWire::getRegisterValue(const ScanI2CTwoWire::RegisterLocation
     return value;
 }
 
+static uint8_t calculateSHTCRC(const uint8_t *data, size_t length)
+{
+    uint8_t crc = 0xFF;
+    for (size_t i = 0; i < length; i++) {
+        crc ^= data[i];
+        for (uint8_t bit = 0; bit < 8; bit++) {
+            if (crc & 0x80) {
+                crc = (uint8_t)((crc << 1) ^ 0x31);
+            } else {
+                crc <<= 1;
+            }
+        }
+    }
+    return crc;
+}
+
+bool ScanI2CTwoWire::isSHT4xSerialResponseValid(ScanI2C::DeviceAddress addr) const
+{
+    TwoWire *i2cBus = fetchI2CBus(addr);
+    i2cBus->beginTransmission(addr.address);
+    i2cBus->write((uint8_t)0x89);
+    if (i2cBus->endTransmission() != 0) {
+        return false;
+    }
+
+    delay(20);
+    if (i2cBus->requestFrom(addr.address, (uint8_t)6) != 6) {
+        return false;
+    }
+
+    uint8_t response[6];
+    for (uint8_t i = 0; i < 6; i++) {
+        response[i] = i2cBus->read();
+    }
+
+    if (calculateSHTCRC(response, 2) != response[2]) {
+        return false;
+    }
+    if (calculateSHTCRC(response + 3, 2) != response[5]) {
+        return false;
+    }
+    return true;
+}
+
 bool ScanI2CTwoWire::i2cCommandResponseLength(ScanI2C::DeviceAddress addr, uint16_t command, uint8_t expectedLength) const
 {
     TwoWire *i2cBus = fetchI2CBus(addr);
@@ -173,6 +217,43 @@ String readSEN5xProductName(TwoWire *i2cBus, uint8_t address)
     }
 
     return String(productName);
+}
+
+bool detectSHT21SerialNumber(TwoWire *i2cBus, uint8_t address) //added for possible use  DRG
+{
+
+    i2cBus->beginTransmission(address);
+    i2cBus->write(0xFA);
+    i2cBus->write(0x0F);
+
+    if (i2cBus->endTransmission() != 0)
+        return false;
+
+    if (i2cBus->requestFrom(address, (uint8_t)8) != 8)
+        return false;
+
+    // Just flush the data
+    while (i2cBus->available() < 8) {
+        i2cBus->read();
+    }
+
+    i2cBus->beginTransmission(address);
+    i2cBus->write(0xFC);
+    i2cBus->write(0xC9);
+
+    if (i2cBus->endTransmission() != 0)
+        return false;
+
+    if (i2cBus->requestFrom(address, (uint8_t)6) != 6)
+        return false;
+
+    // Just flush the data
+    while (i2cBus->available() < 6) {
+        i2cBus->read();
+    }
+
+    // Assume we detect the SHT21 if something came back from the request
+    return true;
 }
 
 #define SCAN_SIMPLE_CASE(ADDR, T, ...)                                                                                           \
@@ -240,11 +321,7 @@ void ScanI2CTwoWire::scanPort(I2CPort port, uint8_t *address, uint8_t asize)
         type = NONE;
         if (err == 0) {
             switch (addr.address) {
-            case SSD1306_ADDRESS_H:
-            case SSD1306_ADDRESS_L:
-                type = probeOLED(addr);
-                break;
-
+	       
 #ifdef RV3028_RTC
             case RV3028_RTC:
                 // foundDevices[addr] = RTC_RV3028;
@@ -342,6 +419,21 @@ void ScanI2CTwoWire::scanPort(I2CPort port, uint8_t *address, uint8_t asize)
                         break;
                     }
                     break;
+					 case SHTXX_ADDR:     // same as OPT3001_ADDR_ALT
+            case SHTXX_ADDR_ALT: // same as OPT3001_ADDR
+			LOG_DEBUG("------------------------------------------------case shtxx");
+                if (getRegisterValue(ScanI2CTwoWire::RegisterLocation(addr, 0x7E), 2) == 0x5449) {
+                    type = OPT3001;
+                    logFoundDevice("OPT3001", (uint8_t)addr.address);
+                } else { // SHTXX
+                    type = SHTXX;
+                    logFoundDevice("---------------------------------------------------SHTXX", (uint8_t)addr.address);
+                }
+
+                break;
+
+                SCAN_SIMPLE_CASE(SHTC3_ADDR, SHTXX, "SHTXX", (uint8_t)addr.address)
+
                 default:
                     registerValue = getRegisterValue(ScanI2CTwoWire::RegisterLocation(addr, 0x00), 1); // GET_ID
                     switch (registerValue) {
@@ -446,22 +538,23 @@ void ScanI2CTwoWire::scanPort(I2CPort port, uint8_t *address, uint8_t asize)
                     }
                     break;
                 }
-            case SHT31_4x_ADDR:     // same as OPT3001_ADDR_ALT
+            case SHT31_4x_ADDR:     // same as OPT3001_ADDR_ALT   DRG
             case SHT31_4x_ADDR_ALT: // same as OPT3001_ADDR
                 if (getRegisterValue(ScanI2CTwoWire::RegisterLocation(addr, 0x7E), 2) == 0x5449) {
                     type = OPT3001;
                     logFoundDevice("OPT3001", (uint8_t)addr.address);
-                } else if (i2cCommandResponseLength(addr, 0x89, 6)) { // SHT4x serial number (6 bytes inc. CRC)
+                } else if (isSHT4xSerialResponseValid(addr)) { // SHT4x serial number with CRC validation
                     type = SHT4X;
                     logFoundDevice("SHT4X", (uint8_t)addr.address);
                 } else {
                     type = SHT31;
                     logFoundDevice("SHT31", (uint8_t)addr.address);
                 }
-
                 break;
-
-                SCAN_SIMPLE_CASE(SHTC3_ADDR, SHTC3, "SHTC3", (uint8_t)addr.address)
+            case SHTC3_ADDR:
+                type = SHTC3;
+                logFoundDevice("SHTC3", (uint8_t)addr.address);
+                break;
             case RCWL9620_ADDR:
                 // get MAX30102 PARTID
                 registerValue = getRegisterValue(ScanI2CTwoWire::RegisterLocation(addr, 0xFF), 1);
@@ -780,6 +873,6 @@ size_t ScanI2CTwoWire::countDevices() const
 
 void ScanI2CTwoWire::logFoundDevice(const char *device, uint8_t address)
 {
-    LOG_INFO("%s found at address 0x%x", device, address);
+    LOG_INFO("------------------------------- %s found at address 0x%x", device, address);
 }
 #endif

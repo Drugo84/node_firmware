@@ -230,6 +230,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SFA30_ADDR 0x5D
 #define SHT31_4x_ADDR 0x44
 #define SHT31_4x_ADDR_ALT 0x45
+#define SHTXX_ADDR 0x44 // DRG
+#define SHTXX_ADDR_ALT 0x45 // DRG
 #define PMSA003I_ADDR 0x12
 #define QMA6100P_ADDR 0x12
 #define AHT10_ADDR 0x38
