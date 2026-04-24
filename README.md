@@ -47,6 +47,8 @@ Commands are **case insensitive**. Position and telemetry are transmitted as nat
 # Seeed XIAO nRF52840 Kit with I2C on D6/D7
 pio run -e seeed_xiao_nrf52840_kit_i2c
 
+pio run -e seeed-xiao-s3
+
 # Heltec WiFi LoRa 32 V3
 pio run -e heltec-v3
 
