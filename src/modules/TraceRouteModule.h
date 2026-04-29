@@ -75,7 +75,7 @@ class TraceRouteModule : public ProtobufModule<meshtastic_RouteDiscovery>,
     TraceRouteRunState runState = TRACEROUTE_STATE_IDLE;
     unsigned long lastTraceRouteTime = 0;
     unsigned long resultShowTime = 0;
-    unsigned long cooldownMs = 30000;
+    unsigned long cooldownMs = 5000;
     unsigned long resultDisplayMs = 10000;
     unsigned long trackingTimeoutMs = 10000;
     String bannerText;
