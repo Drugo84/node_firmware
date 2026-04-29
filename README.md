@@ -47,6 +47,7 @@ Commands are **case insensitive**. Position and telemetry are transmitted as nat
 # Seeed XIAO nRF52840 Kit with I2C on D6/D7
 pio run -e seeed_xiao_nrf52840_kit_i2c
 
+# Seeed XIAO ESP32S3
 pio run -e seeed-xiao-s3
 
 # Heltec WiFi LoRa 32 V3
@@ -59,7 +60,7 @@ pio run -e heltec-wsl-v3
 pio run -e rak4631
 
 # All at once
-pio run -e seeed_xiao_nrf52840_kit_i2c -e heltec-v3 -e heltec-wsl-v3 -e rak4631
+pio run -e seeed_xiao_nrf52840_kit_i2c -e heltec-v3 -e heltec-wsl-v3 -e rak4631 -e seeed-xiao-s3
 ```
 
 ## Build Notes (SSH on Guleek i8s)
