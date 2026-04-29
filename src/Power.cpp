@@ -755,9 +755,8 @@ void Power::powerCommandsCheck()
         LOG_INFO("Rebooting");
         reboot();
     }
-
     if (shutdownAtMsec && millis() > shutdownAtMsec) {
-        shutdownAtMsec = 0;
+        LOG_INFO("Shutdown initiated");
         shutdown();
     }
 
@@ -765,8 +764,10 @@ void Power::powerCommandsCheck()
         autoRebootStartMsec = millis();
     }
 
-    if (rebootAtMsec == 0 && shutdownAtMsec == 0 && !Throttle::isWithinTimespanMs(autoRebootStartMsec, AUTO_REBOOT_INTERVAL_MS)) {
-        LOG_INFO("Automatic maintenance reboot after %u seconds uptime", AUTO_REBOOT_INTERVAL_MS / 1000U);
+    // Aggiunta protezione per evitare reboot immediati a causa di overflow del timer
+    uint32_t uptime = millis() - autoRebootStartMsec;
+    if (rebootAtMsec == 0 && shutdownAtMsec == 0 && uptime > AUTO_REBOOT_INTERVAL_MS) {
+        LOG_INFO("Automatic maintenance reboot after %u seconds uptime", uptime / 1000U);
         reboot();
     }
 }

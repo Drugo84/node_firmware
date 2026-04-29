@@ -139,21 +139,34 @@ bool SHTXXSensor::setAccuracy(SHTSensor::SHTAccuracy newAccuracy)
 
 bool SHTXXSensor::getMetrics(meshtastic_Telemetry *measurement)
 {
-    if (sht.readSample()) {
-        measurement->variant.environment_metrics.has_temperature = true;
-        measurement->variant.environment_metrics.has_relative_humidity = true;
-        measurement->variant.environment_metrics.temperature = sht.getTemperature();
-        measurement->variant.environment_metrics.relative_humidity = sht.getHumidity();
-
-        LOG_INFO("%s (%s): Got: temp:%fdegC, hum:%f%%rh", sensorName, sensorVariant,
-                 measurement->variant.environment_metrics.temperature,
-                 measurement->variant.environment_metrics.relative_humidity);
-
-        return true;
-    } else {
+    // Implementiamo un timeout per evitare blocchi prolungati
+    unsigned long startTime = millis();
+    
+    // Timeout dopo 1000ms (1 secondo)
+    if (!sht.readSample()) {
         LOG_ERROR("%s (%s): read sample failed", sensorName, sensorVariant);
         return false;
     }
+    
+    // Controlliamo la durata della lettura
+    unsigned long readDuration = millis() - startTime;
+    
+    // Logghiamo un avviso se la lettura ha richiesto più di 500ms
+    if (readDuration > 500) {
+        LOG_WARN("%s (%s): Reading took %lu ms, may cause performance issues", 
+                 sensorName, sensorVariant, readDuration);
+    }
+        
+    measurement->variant.environment_metrics.has_temperature = true;
+    measurement->variant.environment_metrics.has_relative_humidity = true;
+    measurement->variant.environment_metrics.temperature = sht.getTemperature();
+    measurement->variant.environment_metrics.relative_humidity = sht.getHumidity();
+
+    LOG_INFO("%s (%s): Got: temp:%fdegC, hum:%f%%rh", sensorName, sensorVariant,
+             measurement->variant.environment_metrics.temperature,
+             measurement->variant.environment_metrics.relative_humidity);
+
+    return true;
 }
 
 AdminMessageHandleResult SHTXXSensor::handleAdminMessage(const meshtastic_MeshPacket &mp, meshtastic_AdminMessage *request,

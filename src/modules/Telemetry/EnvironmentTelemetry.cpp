@@ -330,6 +330,7 @@ int32_t EnvironmentTelemetryModule::runOnce()
             return disable();
         }
 
+        // Elabora i sensori
         for (TelemetrySensor *sensor : sensors) {
             uint32_t delay = sensor->runOnce();
             if (delay < result) {
@@ -642,20 +643,42 @@ bool EnvironmentTelemetryModule::getEnvironmentTelemetry(meshtastic_Telemetry *m
     m->which_variant = meshtastic_Telemetry_environment_metrics_tag;
     m->variant.environment_metrics = meshtastic_EnvironmentMetrics_init_zero;
 
+    // Cerca prima il sensore SHT3x per dare priorità ai suoi dati
+    TelemetrySensor *sht3x_sensor = nullptr;
     for (TelemetrySensor *sensor : sensors) {
-        uint8_t currentAddr = sensor->getAddr(); // DRG
-        meshtastic_Telemetry temp = meshtastic_Telemetry_init_zero;
-        temp.which_variant = meshtastic_Telemetry_environment_metrics_tag;
-        get_metrics = sensor->getMetrics(&temp); // avoid short-circuit evaluation rules
-        if (get_metrics) {
-            mergeEnvironmentMetrics(&temp.variant.environment_metrics, &m->variant.environment_metrics,
-                                    isPreferredTemperatureProvider(sensor));
-            LOG_INFO("TELEMETRY: Dati letti correttamente da 0x%02x (T: %.1f H: %.1f)",
-                      currentAddr, temp.variant.environment_metrics.temperature,
-                      temp.variant.environment_metrics.relative_humidity);
+        if (sensor->getSensorType() == meshtastic_TelemetrySensorType_SHT31) {
+            sht3x_sensor = sensor;
+            break;
         }
-        valid = valid || get_metrics;
-        hasSensor = true;
+    }
+
+    // Se troviamo un sensore SHT3x, proviamo a ottenerne i dati
+    if (sht3x_sensor != nullptr) {
+        get_metrics = sht3x_sensor->getMetrics(m);
+        if (get_metrics) {
+            valid = true;
+            hasSensor = true;
+            LOG_DEBUG("TELEMETRY: Lettura SHT3x riuscita");
+        } else {
+            LOG_DEBUG("TELEMETRY: Lettura SHT3x fallita, provo altri sensori");
+        }
+    }
+
+    // Elabora gli altri sensori per completare i dati mancanti
+    for (TelemetrySensor *sensor : sensors) {
+        // Salta il sensore SHT3x perché già elaborato (se era presente)
+        if (sensor->getSensorType() == meshtastic_TelemetrySensorType_SHT31) {
+            continue;
+        }
+
+        get_metrics = sensor->getMetrics(m); // avoid short-circuit evaluation rules
+        if (get_metrics) {
+            // Se non avevamo ancora dati validi, impostiamo valid a true
+            if (!valid) {
+                valid = true;
+            }
+            hasSensor = true;
+        }
     }
 
 #ifndef T1000X_SENSOR_EN
