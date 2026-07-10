@@ -63,16 +63,16 @@ pio run -e rak4631
 pio run -e seeed_xiao_nrf52840_kit_i2c -e heltec-v3 -e heltec-wsl-v3 -e rak4631 -e seeed-xiao-s3
 ```
 
-## Build Notes (SSH on Guleek i8s)
+## Build Notes (for slow machines / unstable SSH sessions)
 
-Always use `screen` for long builds to prevent the process from dying if SSH drops:
+For long builds on slow machines or over unstable SSH connections, run builds inside a terminal multiplexer such as `screen` or `tmux` to avoid losing progress if the SSH session disconnects:
 ```bash
 screen -S build
 cd ~/firmware
 pio run -e seeed_xiao_nrf52840_kit_i2c -e heltec-v3 -e heltec-wsl-v3 -e rak4631
 ```
 
-If SSH drops, reconnect and resume with:
+If the SSH session drops, reconnect and resume the `screen` session with:
 ```bash
 screen -r build
 ```
@@ -81,16 +81,4 @@ screen -r build
 
 Based on [meshtastic/firmware](https://github.com/meshtastic/firmware) — follow the upstream repo for updates.
 
-## Note compilazione su Guleek i8s (SSH)
-
-Usare sempre `screen` per le compilazioni lunghe — evita che il processo muoia se SSH cade:
-```bash
-screen -S build
-cd ~/firmware
-pio run -e seeed_xiao_nrf52840_kit_i2c -e heltec-v3 -e heltec-wsl-v3 -e rak4631
-```
-
-Se SSH cade, riconnetti e riprendi con:
-```bash
-screen -r build
-```
+<!-- Removed Italian duplicate section; build notes consolidated above in English -->
