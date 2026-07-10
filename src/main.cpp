@@ -32,6 +32,9 @@
 #include "detect/einkScan.h"
 #include "graphics/Screen.h"
 #include "main.h"
+#include "HeartbeatThread.h"
+
+HeartbeatThread *heartbeatThread = nullptr;
 #include "mesh/generated/meshtastic/config.pb.h"
 #include "meshUtils.h"
 #include "modules/Modules.h"
@@ -887,7 +890,9 @@ void setup()
 #endif
     service = new MeshService();
     service->init();
+    heartbeatThread = new HeartbeatThread();
 
+    // OSThread instances are automatically registered with the controller in their constructor.
     // Set osk_found for trackball/encoder devices BEFORE setupModules so CannedMessageModule can detect it
 #if defined(HAS_TRACKBALL) || (defined(INPUTDRIVER_ENCODER_TYPE) && INPUTDRIVER_ENCODER_TYPE == 2)
 #ifndef HAS_PHYSICAL_KEYBOARD
